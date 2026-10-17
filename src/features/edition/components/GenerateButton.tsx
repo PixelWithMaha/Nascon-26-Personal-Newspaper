@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useGenerateEdition } from "../hooks";
 
-type Props = { label?: string; autoStart?: boolean };
+type Props = { label?: string; autoStart?: boolean; redirectTo?: string };
 
-export function GenerateButton({ label = "Print today's edition", autoStart = false }: Props) {
+export function GenerateButton({ label = "Print today's edition", autoStart = false, redirectTo }: Props) {
   const router = useRouter();
   const generate = useGenerateEdition();
   const started = useRef(false);
 
-  const print = () => generate.mutate(undefined, { onSuccess: () => router.refresh() });
+  const print = () =>
+    generate.mutate(undefined, {
+      onSuccess: () => (redirectTo ? router.push(redirectTo) : router.refresh()),
+    });
 
   useEffect(() => {
     if (autoStart && !started.current) {
