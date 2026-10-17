@@ -4,6 +4,7 @@ import { z } from "zod";
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   CRON_SECRET: z.string().min(1),
 });
 
