@@ -1,6 +1,7 @@
 import "server-only";
 import type { Edition, Story } from "@/features/edition/schemas";
 import { issueNumber, longDate } from "@/features/edition/format";
+import { puzzleFor } from "@/features/edition/wordSearch";
 import { launchBrowser } from "@/server/integrations/browser";
 import { getSupabaseAdmin } from "@/server/integrations/supabase";
 import { HttpError } from "@/server/http";
@@ -59,6 +60,15 @@ img { display: block; width: 100%; object-fit: cover; filter: grayscale(1) contr
 .item.feature h4 { font-size: 12.5pt; }
 .item img { height: 34mm; margin-bottom: 2px; }
 .item.brief h4 { font-family: 'Source Serif 4', Georgia, serif; font-size: 9pt; font-weight: 600; }
+
+/* Puzzle corner: the same word search as the web page, kept together on one page. */
+.puzzle { break-inside: avoid; page-break-inside: avoid; margin-top: 14px; }
+.puzzle-body { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: start; }
+.ws { border-collapse: collapse; border: 2px solid #17140f; }
+.ws td { width: 7.5mm; height: 7.5mm; padding: 0; text-align: center; vertical-align: middle; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 11pt; border: 1px solid rgba(23,20,15,.15); }
+.ws-words { columns: 2; column-gap: 16px; list-style: none; padding: 0; margin: 6px 0 0; font-family: 'Playfair Display', serif; font-size: 11.5pt; letter-spacing: .06em; }
+.ws-words li { padding: 3px 0; border-bottom: 1px dotted rgba(23,20,15,.3); break-inside: avoid; }
+.ws-note { font-style: italic; font-size: 8pt; color: #4a453c; margin-top: 8px; }
 `;
 
 const photo = (s: Story) =>
@@ -75,6 +85,25 @@ function itemHtml(s: Story, section: string): string {
   }
   const dek = s.size === "feature" && s.dek ? `<p class="dek">${esc(s.dek)}</p>` : "";
   return `<div class="item ${s.size}">${photo(s)}<span class="kicker">${esc(section)}</span><h4>${esc(s.headline)}</h4>${dek}<p>${esc(s.summary)}</p>${meta(s)}${why(s)}</div>`;
+}
+
+/** The printed word search: same grid and words as the web page. */
+function puzzleHtml(edition: Edition): string {
+  const { grid, placed } = puzzleFor(edition);
+  if (placed.length === 0) return "";
+  const rows = grid.map((row) => `<tr>${row.map((letter) => `<td>${esc(letter)}</td>`).join("")}</tr>`).join("");
+  const words = placed.map((p) => `<li>${esc(p.word)}</li>`).join("");
+  return `<div class="puzzle">
+  <div class="more-head">PUZZLE CORNER · WORD SEARCH</div>
+  <div class="puzzle-body">
+    <table class="ws">${rows}</table>
+    <div>
+      <p class="label">Find these words</p>
+      <ul class="ws-words">${words}</ul>
+      <p class="ws-note">Every word is hidden in today's headlines. Words run in all eight directions: across, down, diagonally and backwards.</p>
+    </div>
+  </div>
+</div>`;
 }
 
 /** Pure: the print layout as a self-contained HTML document. */
@@ -144,6 +173,8 @@ export function renderEditionHtml(edition: Edition): string {
           .join("")}</div>`
       : ""
   }
+
+  ${puzzleHtml(edition)}
 </body></html>`;
 }
 

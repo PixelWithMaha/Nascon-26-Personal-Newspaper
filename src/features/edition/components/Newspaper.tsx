@@ -6,6 +6,7 @@ import { FeedbackProvider } from "./FeedbackProvider";
 import { NewsPhoto } from "./NewsPhoto";
 import { OriginalLink } from "./OriginalLink";
 import { StoryShell } from "./StoryShell";
+import { WordSearch } from "./WordSearch";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -314,6 +315,13 @@ export function Newspaper({ editionId, edition, hiddenStoryIds }: NewspaperProps
         {sectionPages.map((section, i) => (
           <SectionPage key={section.name} name={section.name} stories={section.stories} page={i + 2} />
         ))}
+                {sectionPages.map((section, i) => (
+          <SectionPage key={section.name} name={section.name} stories={section.stories} page={i + 2} />
+        ))}
+
+        <WordSearch edition={edition} />
+
+        <footer className="mx-auto max-w-6xl border-y-4 border-double border-ink/60 py-3 text-center font-display text-lg italic text-ink"></footer>
 
         <footer className="mx-auto max-w-6xl border-y-4 border-double border-ink/60 py-3 text-center font-display text-lg italic text-ink">
           ★ Read slowly. Think freely. Come back tomorrow. ★
