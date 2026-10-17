@@ -41,3 +41,10 @@ export async function requireUserId(): Promise<string> {
   if (error || !data.user) throw new HttpError(401, "Not signed in");
   return data.user.id;
 }
+
+/** Current reader's id, or null when there is no session. */
+export async function getOptionalUserId(): Promise<string | null> {
+  const supabase = await getSupabaseUser();
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
