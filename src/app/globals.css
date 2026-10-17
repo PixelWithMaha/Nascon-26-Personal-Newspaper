@@ -136,3 +136,8 @@
     @apply font-sans;
   }
 }
+/* Dark page edges on the archive, so overscroll / rubber-banding never shows white. */
+html:has([data-theme="archive"]),
+html:has([data-theme="archive"]) body {
+  background-color: #0d0b08;
+}
