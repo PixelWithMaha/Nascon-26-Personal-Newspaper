@@ -13,11 +13,11 @@ export default async function PaperPage() {
   return (
     <main className="min-h-dvh bg-[#e6e0d2] px-2 pb-12 md:px-6">
       <nav className="mx-auto flex max-w-6xl items-center justify-between py-4">
-        <Link
-          href="/onboarding"
+                <Link
+          href="/interests"
           className="font-condensed text-xs uppercase tracking-[0.25em] text-ink underline-offset-4 hover:underline"
         >
-          Edit interests
+          What we know about you
         </Link>
                <div className="flex items-start gap-3">
           {latest && (

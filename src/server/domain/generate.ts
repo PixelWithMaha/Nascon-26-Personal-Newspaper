@@ -1,12 +1,12 @@
 import "server-only";
 import type { Edition } from "@/features/edition/schemas";
+import { EMPTY_PROFILE } from "@/features/interests/schemas";
 import { HttpError } from "@/server/http";
 import { getPreferences } from "./preferences";
 import { ingest } from "./ingest";
 import { curate } from "./curate";
-import { refreshLearnedSummary } from "./learning";
+import { refreshLearnedProfile } from "./learning";
 import { completeEdition, failEdition, getRecentStoryUrls, startEdition } from "./editions";
-
 
 export function localDate(timezone: string, now = new Date()): string {
   try {
@@ -28,12 +28,12 @@ export async function generateEdition(userId: string): Promise<Edition> {
   const editionDate = localDate(prefs.timezone);
   const editionId = await startEdition(userId, editionDate);
 
-    try {
-    const [{ articles }, learnedSummary, recentUrls] = await Promise.all([
+  try {
+    const [{ articles }, profile, recentUrls] = await Promise.all([
       ingest(prefs),
-      refreshLearnedSummary(userId).catch((err) => {
-        console.warn("[generate] learned summary skipped", err);
-        return "";
+      refreshLearnedProfile(userId).catch((err) => {
+        console.warn("[generate] profile refresh skipped", err);
+        return EMPTY_PROFILE;
       }),
       getRecentStoryUrls(userId, editionDate),
     ]);
@@ -43,7 +43,7 @@ export async function generateEdition(userId: string): Promise<Edition> {
       throw new HttpError(502, "Not enough fresh articles today. Try adding a few more topics.");
     }
 
-    const edition = await curate(fresh, prefs, editionDate, learnedSummary);
+    const edition = await curate(fresh, prefs, editionDate, profile);
     await completeEdition(editionId, edition);
     return edition;
   } catch (err) {

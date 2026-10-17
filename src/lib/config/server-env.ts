@@ -6,6 +6,7 @@ const serverSchema = z.object({
   GEMINI_API_KEY: z.string().min(1),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   CRON_SECRET: z.string().min(1),
+  CHROME_EXECUTABLE_PATH: z.string().optional(),
 });
 
 let cached: z.infer<typeof serverSchema> | undefined;

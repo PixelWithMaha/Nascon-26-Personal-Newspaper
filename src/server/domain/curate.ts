@@ -4,6 +4,7 @@ import type { Preferences } from "@/features/onboarding/schemas";
 import { editionSchema, storySizeSchema, type Edition, type Story } from "@/features/edition/schemas";
 import { generateJson } from "@/server/integrations/gemini";
 import type { Article } from "./ingest";
+import { EMPTY_PROFILE, type LearnedProfile } from "@/features/interests/schemas";
 
 /** What Gemini is allowed to return. No URLs, sources or dates: those come from our data. */
 export const modelEditionSchema = z.object({
@@ -46,7 +47,7 @@ Rules:
 - Group stories into 3-6 sections with short newspaper-style names. Order sections by importance to the reader; the lead's section comes first.
 - topic: the reader topic the story belongs to, using the reader's own topic names where possible.
 - tagline: a short, witty line for today's masthead. editor_note: 2-3 sentences previewing today's paper, addressed to the reader by name.
-- READER.learned_profile summarises what this reader has recently liked and disliked. Follow it closely.
+- READER.learned_profile lists specific themes this reader likes, dislikes and is exploring. Favour likes, avoid dislikes, and treat exploring themes as worth testing.
 - Leave room for discovery: about 1 in 10 stories may come from a lower-weight topic if it is genuinely interesting.`;
 
 /** 5 min -> 6, 10 -> 10, 15 -> 14, 20 -> 18 */
@@ -58,14 +59,18 @@ export function buildPrompt(
   articles: Article[],
   prefs: Preferences,
   storyCount: number,
-  learnedSummary = "",
+  profile: LearnedProfile = EMPTY_PROFILE,
 ): string {
   const reader = {
     name: prefs.displayName,
     topics: prefs.topics.map((t) => ({ name: t.name, weight: t.weight })),
     keywords: prefs.keywords,
     blocked_keywords: prefs.blockedKeywords,
-    learned_profile: learnedSummary || "No feedback yet.",
+    learned_profile: {
+      likes: profile.likes.map((i) => i.label),
+      dislikes: profile.dislikes.map((i) => i.label),
+      exploring: profile.exploring.map((i) => i.label),
+    },
   };
 
   const list = articles.map((a) => ({
@@ -141,11 +146,10 @@ export async function curate(
   articles: Article[],
   prefs: Preferences,
   editionDate: string,
-  learnedSummary = "",
+  profile: LearnedProfile = EMPTY_PROFILE,
 ): Promise<Edition> {
   const maxStories = Math.min(targetStoryCount(prefs.readingMinutes), articles.length);
-  const prompt = buildPrompt(articles, prefs, maxStories, learnedSummary);
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  const prompt = buildPrompt(articles, prefs, maxStories, profile); for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const raw = await generateJson({ system: SYSTEM_PROMPT, prompt, jsonSchema: modelEditionJsonSchema });
       const output = modelEditionSchema.parse(raw);
