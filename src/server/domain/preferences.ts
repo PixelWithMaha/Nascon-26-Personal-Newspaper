@@ -1,5 +1,4 @@
 import "server-only";
-import { getSupabaseUser } from "@/server/integrations/supabase";
 import { preferencesSchema, type Preferences } from "@/features/onboarding/schemas";
 import { EMPTY_PROFILE, learnedProfileSchema, type LearnedProfile } from "@/features/interests/schemas";
 import { db } from "@/server/integrations/supabase";

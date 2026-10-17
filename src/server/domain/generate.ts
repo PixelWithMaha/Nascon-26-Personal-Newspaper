@@ -7,6 +7,7 @@ import { ingest, type DateWindow } from "./ingest";
 import { curate } from "./curate";
 import { refreshLearnedProfile } from "./learning";
 import { completeEdition, failEdition, getRecentStoryUrls, startEdition } from "./editions";
+import { enrichArticles } from "./enrich";
 
 export function localDate(timezone: string, now = new Date()): string {
   try {
@@ -59,11 +60,17 @@ export async function generateEditionRecord(
       throw new HttpError(502, "Not enough fresh articles for that day. Try adding a few more topics.");
     }
 
-    const t1 = Date.now();
-    const edition = await curate(fresh, prefs, editionDate, profile);
-    console.info(`[generate] ${editionDate}: curate ${Date.now() - t1}ms`);
+       const t1 = Date.now();
+    const enriched = await enrichArticles(fresh);
+    console.info(
+      `[generate] ${editionDate}: enrich ${Date.now() - t1}ms, ${enriched.filter((a) => a.imageUrl).length} with photos`,
+    );
+
+    const t2 = Date.now();
+    const edition = await curate(enriched, prefs, editionDate, profile);
+    console.info(`[generate] ${editionDate}: curate ${Date.now() - t2}ms`);
     await completeEdition(editionId, edition);
-        return { id: editionId, edition };
+    return { id: editionId, edition };
   } catch (err) {
     await failEdition(editionId);
     throw err;

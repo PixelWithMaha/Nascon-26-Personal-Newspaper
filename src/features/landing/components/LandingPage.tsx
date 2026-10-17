@@ -1,5 +1,5 @@
 "use client";
-
+import { SiteLogo } from "@/components/SiteLogo";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { CrumpleHero } from "./CrumpleHero";
@@ -15,7 +15,7 @@ export function LandingPage({ returning }: { returning: boolean }) {
   return (
     <div data-theme="landing" className="bg-[radial-gradient(ellipse_at_top,#2b251c_0%,#0d0b08_60%)] text-paper">
       <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-5 py-4">
-        <span className="font-blackletter text-2xl">The Morning Paper</span>
+        <SiteLogo tone="dark" />
         <Link
           href={returning ? "/paper" : "/onboarding"}
           className="font-condensed text-xs uppercase tracking-[0.25em] text-paper/80 underline-offset-4 hover:underline"

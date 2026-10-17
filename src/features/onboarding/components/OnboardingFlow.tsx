@@ -12,6 +12,7 @@ import { preferencesSchema, sourceSchema, type Preferences } from "../schemas";
 import { useSavePreferences } from "../hooks";
 import { DEFAULT_WEIGHT, INTEREST_LEVELS, READING_OPTIONS, TOPICS } from "../constants";
 import { TagInput } from "./TagInput";
+import { SiteLogo } from "@/components/SiteLogo";
 
 const STEPS = [
   {
@@ -132,7 +133,7 @@ export function OnboardingFlow({ initialName = "" }: { initialName?: string }) {
   return (
     <div className="mx-auto w-full max-w-xl">
       <header className="mb-10 border-b pb-4 text-center">
-        <p className="font-serif text-2xl font-bold tracking-tight">The Morning Paper</p>
+        <SiteLogo className="text-3xl" />
         <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full bg-foreground transition-all"

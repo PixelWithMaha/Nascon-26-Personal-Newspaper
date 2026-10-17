@@ -4,7 +4,8 @@ export type ScatteredPageData = {
   kind: PageKind;
   outlet: string;
   headline: string;
-  // positions in vw / vh relative to the screen centre, degrees for rotation
+  seed: string;
+  clip: string;
   x: number;
   y: number;
   r: number;
@@ -33,7 +34,6 @@ const PAGES: { kind: PageKind; outlet: string; headline: string }[] = [
   { kind: "article", outlet: "The Ledger Review", headline: "Why every app wants to be a bank" },
 ];
 
-/** Deterministic pseudo-random numbers, so every visit (and server/client) gets the same layout. */
 function seeded(seed: number) {
   let s = seed;
   return () => {
@@ -47,11 +47,26 @@ function seeded(seed: number) {
 const rand = seeded(7);
 const between = (min: number, max: number) => min + rand() * (max - min);
 
+/** A hand-torn outline: torn bottom always, torn top sometimes. */
+function tornEdge(tornTop: boolean): string {
+  const steps = 22;
+  const points: string[] = [];
+  if (tornTop) {
+    for (let k = 0; k <= steps; k++) points.push(`${((k / steps) * 100).toFixed(1)}% ${(rand() * 3.5).toFixed(1)}%`);
+  } else {
+    points.push("0% 0%", "100% 0%");
+  }
+  for (let k = steps; k >= 0; k--) points.push(`${((k / steps) * 100).toFixed(1)}% ${(100 - rand() * 4.5).toFixed(1)}%`);
+  return `polygon(${points.join(", ")})`;
+}
+
 export const SCATTERED_PAGES: ScatteredPageData[] = PAGES.map((page, i) => {
   const col = i % 4;
   const row = Math.floor(i / 4);
   return {
     ...page,
+    seed: `morning-paper-${i}`,
+    clip: tornEdge(i % 2 === 0),
     x: -36 + col * 24 + between(-5, 5),
     y: -30 + row * 20 + between(-5, 5),
     r: between(-16, 16),

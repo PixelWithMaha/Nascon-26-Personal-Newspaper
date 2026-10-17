@@ -22,6 +22,7 @@ const story = (article_id: string, size: StorySize = "standard") => ({
   why: "Because you follow AI.",
   topic: "AI",
   size,
+  image_query: "BMW",
 });
 
 const output = (stories: ReturnType<typeof story>[]): ModelEdition => ({

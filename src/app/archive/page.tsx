@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EditionStack } from "@/features/archive";
 import { getOptionalUserId } from "@/server/integrations/supabase";
+import { SiteLogo } from "@/components/SiteLogo";
 import { listEditionSummaries } from "@/server/domain/archive";
 
 export default async function ArchivePage() {
@@ -14,12 +15,13 @@ export default async function ArchivePage() {
       data-theme="archive"
       className="flex h-dvh flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,#3a3327_0%,#17140f_55%,#0d0b08_100%)] px-4 text-paper"
     >
-      <nav className="mx-auto w-full max-w-7xl shrink-0 py-3">
+           <nav className="mx-auto flex w-full max-w-7xl shrink-0 items-center justify-between py-3">
+        <SiteLogo tone="dark" />
         <Link
           href="/paper"
           className="font-condensed text-xs uppercase tracking-[0.25em] text-paper/80 underline-offset-4 hover:underline"
         >
-          ← Today&apos;s paper
+          Today&apos;s paper →
         </Link>
       </nav>
 

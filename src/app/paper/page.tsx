@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DownloadPdfButton, GenerateButton, Newspaper } from "@/features/edition";
 import { getOptionalUserId } from "@/server/integrations/supabase";
 import { getHiddenStoryIds, getLatestEdition } from "@/server/domain/editions";
+import { SiteLogo } from "@/components/SiteLogo";
 
 const navLink =
   "font-condensed text-xs uppercase tracking-[0.25em] text-ink underline-offset-4 hover:underline";
@@ -16,7 +17,8 @@ export default async function PaperPage() {
   return (
     <main className="min-h-dvh bg-[#e6e0d2] px-2 pb-12 md:px-6">
       <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 py-4">
-        <div className="flex flex-wrap gap-5">
+                <div className="flex flex-wrap items-center gap-5">
+          <SiteLogo />
           <Link href="/interests" className={navLink}>
             What we know about you
           </Link>
@@ -44,3 +46,4 @@ export default async function PaperPage() {
     </main>
   );
 }
+

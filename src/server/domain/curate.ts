@@ -5,6 +5,7 @@ import { editionSchema, storySizeSchema, type Edition, type Story } from "@/feat
 import { generateJson } from "@/server/integrations/gemini";
 import type { Article } from "./ingest";
 import { EMPTY_PROFILE, type LearnedProfile } from "@/features/interests/schemas";
+import { illustrate } from "./illustrate";
 
 /** What Gemini is allowed to return. No URLs, sources or dates: those come from our data. */
 export const modelEditionSchema = z.object({
@@ -22,6 +23,7 @@ export const modelEditionSchema = z.object({
           why: z.string(),
           topic: z.string(),
           size: storySizeSchema,
+          image_query: z.string(),
         }),
       ),
     }),
@@ -41,6 +43,7 @@ Rules:
 - Avoid near-duplicate stories about the same event; keep the best one.
 - Write headline, dek and summary ONLY from the given title and snippet. Do not add facts, numbers, names, dates or quotes that are not in them. If the snippet is thin, keep the summary short rather than guessing.
 - headline: punchy newspaper style, under 12 words. dek: one line that adds context, under 20 words.
+- image_query: 1-4 words naming the most photographable subject of the story, taken from its title or snippet: a specific company, product, person, place or object (e.g. "BMW iX", "Nvidia", "Wall Street", "PlayStation 5"). Never invent a subject that isn't in the article.
 - summary: 40-100 words for lead and feature, 30-70 for standard, 1-2 sentences for brief.
 - why: one short sentence to the reader explaining the pick, e.g. "Because AI is one of your top interests."
 - Exactly one story has size "lead": the most important story for this reader today. Use "feature" for 1-3 strong stories, "brief" for minor items, "standard" otherwise.
@@ -48,6 +51,7 @@ Rules:
 - topic: the reader topic the story belongs to, using the reader's own topic names where possible.
 - tagline: a short, witty line for today's masthead. editor_note: 2-3 sentences previewing today's paper, addressed to the reader by name.
 - READER.learned_profile lists specific themes this reader likes, dislikes and is exploring. Favour likes, avoid dislikes, and treat exploring themes as worth testing.
+- When two stories are similarly important, prefer ones with has_image: true for lead and feature.
 - Leave room for discovery: about 1 in 10 stories may come from a lower-weight topic if it is genuinely interesting.`;
 
 /** 5 min -> 6, 10 -> 10, 15 -> 14, 20 -> 18 */
@@ -79,6 +83,7 @@ export function buildPrompt(
     title: a.title,
     source: a.source,
     published_at: a.publishedAt,
+    has_image: Boolean(a.imageUrl),
     snippet: a.snippet,
   }));
   return `TARGET_STORY_COUNT: ${storyCount}\n\nREADER:\n${JSON.stringify(reader)}\n\nARTICLES:\n${JSON.stringify(list)}`;
@@ -141,6 +146,22 @@ export function assembleEdition(output: ModelEdition, articles: Article[], ctx: 
     sections,
   });
 }
+const MAX_CANDIDATES = 60;
+
+/** Keeps the prompt small and fast: freshest articles, spread evenly across topics. */
+export function shortlist(articles: Article[], limit = MAX_CANDIDATES): Article[] {
+  const byTopic = new Map<string, Article[]>();
+  for (const a of articles) byTopic.set(a.topic, [...(byTopic.get(a.topic) ?? []), a]);
+  const queues = [...byTopic.values()];
+  const picked: Article[] = [];
+  while (picked.length < limit && queues.some((q) => q.length)) {
+    for (const q of queues) {
+      const next = q.shift();
+      if (next && picked.length < limit) picked.push(next);
+    }
+  }
+  return picked;
+}
 
 export async function curate(
   articles: Article[],
@@ -148,16 +169,24 @@ export async function curate(
   editionDate: string,
   profile: LearnedProfile = EMPTY_PROFILE,
 ): Promise<Edition> {
-  const maxStories = Math.min(targetStoryCount(prefs.readingMinutes), articles.length);
-  const prompt = buildPrompt(articles, prefs, maxStories, profile); for (let attempt = 1; attempt <= 2; attempt++) {
+  const candidates = shortlist(articles);
+  const maxStories = Math.min(targetStoryCount(prefs.readingMinutes), candidates.length);
+  const prompt = buildPrompt(candidates, prefs, maxStories, profile);
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const raw = await generateJson({ system: SYSTEM_PROMPT, prompt, jsonSchema: modelEditionJsonSchema });
       const output = modelEditionSchema.parse(raw);
-      return assembleEdition(output, articles, {
+      const edition = assembleEdition(output, candidates, {
         editionDate,
         readerName: prefs.displayName,
         maxStories,
       });
+      // Gemini named each story's subject; Wikipedia supplies the photo where the article had none.
+      const queries = new Map(
+        output.sections.flatMap((s) => s.stories.map((st) => [st.article_id, st.image_query] as const)),
+      );
+      return await illustrate(edition, queries);
     } catch (err) {
       if (attempt === 2) throw err;
       console.warn("[curate] attempt 1 failed, retrying", err);

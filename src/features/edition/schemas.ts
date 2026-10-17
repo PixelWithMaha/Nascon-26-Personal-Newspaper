@@ -15,6 +15,7 @@ export const storySchema = z.object({
   url: z.url(),
   publishedAt: z.string(),
   imageUrl: z.string().nullable(),
+  imageCredit: z.string().nullable().optional(),
 });
 
 export const editionSchema = z.object({
