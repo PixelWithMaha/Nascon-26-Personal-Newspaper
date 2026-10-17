@@ -41,8 +41,7 @@ const chip = (active: boolean) =>
     "rounded-full border px-4 py-2 text-sm transition-colors",
     active ? "border-foreground bg-foreground text-background" : "hover:bg-muted",
   );
-
-export function OnboardingFlow() {
+export function OnboardingFlow({ initialName = "" }: { initialName?: string }) {
   const router = useRouter();
   const save = useSavePreferences();
   const [step, setStep] = useState(0);
@@ -53,7 +52,7 @@ export function OnboardingFlow() {
   const form = useForm<Preferences>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
-      displayName: "",
+      displayName: initialName,
       topics: [],
       keywords: [],
       blockedKeywords: [],
