@@ -14,10 +14,10 @@ import type {
   SignalRow,
   TopicTrend,
 } from "@/features/interests/schemas";
-import { getSupabaseUser } from "@/server/integrations/supabase";
 import { generateJson } from "@/server/integrations/gemini";
 import { HttpError } from "@/server/http";
 import { getLearnedProfile, getPreferences, saveLearnedProfile, updateTopicWeights } from "./preferences";
+import { db } from "@/server/integrations/supabase";
 
 /* ---------- Topic weights (internal, never shown) ---------- */
 
@@ -64,7 +64,7 @@ export function topicTrend(effect: Record<string, number>): Record<string, Topic
 /* ---------- Recording feedback ---------- */
 
 export async function recordFeedback(userId: string, input: FeedbackInput) {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
 
   const { data: row, error } = await supabase
     .from("editions")
@@ -111,7 +111,7 @@ export async function loadSignals(
   userId: string,
   { sinceDays = 14, limit = 200 }: { sinceDays?: number; limit?: number } = {},
 ): Promise<SignalRow[]> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const since = new Date(Date.now() - sinceDays * 86_400_000).toISOString();
 
   const { data, error } = await supabase

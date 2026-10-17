@@ -17,11 +17,19 @@ export function GenerateButton({ label = "Print today's edition", autoStart = fa
       onSuccess: () => (redirectTo ? router.push(redirectTo) : router.refresh()),
     });
 
-  useEffect(() => {
-    if (autoStart && !started.current) {
-      started.current = true;
-      print();
+    useEffect(() => {
+    if (!autoStart || started.current) return;
+    started.current = true;
+
+    // Auto-print at most once per tab per day, even if the page reloads.
+    const key = `auto-print:${new Date().toISOString().slice(0, 10)}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage unavailable (private mode): fall through and print once.
     }
+    print();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 

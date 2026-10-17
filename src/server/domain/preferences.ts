@@ -2,6 +2,7 @@ import "server-only";
 import { getSupabaseUser } from "@/server/integrations/supabase";
 import { preferencesSchema, type Preferences } from "@/features/onboarding/schemas";
 import { EMPTY_PROFILE, learnedProfileSchema, type LearnedProfile } from "@/features/interests/schemas";
+import { db } from "@/server/integrations/supabase";
 
 const COLUMNS =
   "display_name, topics, keywords, blocked_keywords, sources, reading_minutes, timezone";
@@ -29,7 +30,7 @@ function fromRow(row: PreferencesRow): Preferences {
 }
 
 export async function getPreferences(userId: string): Promise<Preferences | null> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("preferences")
     .select(COLUMNS)
@@ -40,7 +41,7 @@ export async function getPreferences(userId: string): Promise<Preferences | null
 }
 
 export async function hasPreferences(userId: string): Promise<boolean> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("preferences")
     .select("user_id")
@@ -51,7 +52,7 @@ export async function hasPreferences(userId: string): Promise<boolean> {
 }
 
 export async function savePreferences(userId: string, input: Preferences): Promise<Preferences> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("preferences")
     .upsert(
@@ -74,14 +75,14 @@ export async function savePreferences(userId: string, input: Preferences): Promi
 }
 
 export async function updateTopicWeights(userId: string, topics: Preferences["topics"]): Promise<void> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { error } = await supabase.from("preferences").update({ topics }).eq("user_id", userId);
   if (error) throw new Error(`Updating weights failed: ${error.message}`);
 }
 
 
 export async function getLearnedProfile(userId: string): Promise<LearnedProfile> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("preferences")
     .select("learned_profile")
@@ -93,7 +94,7 @@ export async function getLearnedProfile(userId: string): Promise<LearnedProfile>
 }
 
 export async function saveLearnedProfile(userId: string, profile: LearnedProfile): Promise<void> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { error } = await supabase
     .from("preferences")
     .update({ learned_profile: learnedProfileSchema.parse(profile) })

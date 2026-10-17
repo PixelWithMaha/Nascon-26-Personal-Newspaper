@@ -34,8 +34,15 @@ export type Article = {
 type FeedRequest = { url: string; topic: string };
 type FeedBatch = { topic: string; items: FeedItem[] };
 
-export function googleNewsUrl(query: string): string {
-  const q = encodeURIComponent(`${query} when:1d`);
+export type DateWindow = { from: Date; to: Date };
+
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
+export function googleNewsUrl(query: string, window?: DateWindow): string {
+  const range = window
+    ? `after:${ymd(new Date(window.from.getTime() - 86_400_000))} before:${ymd(new Date(window.to.getTime() + 86_400_000))}`
+    : "when:1d";
+  const q = encodeURIComponent(`${query} ${range}`);
   return `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`;
 }
 
@@ -51,20 +58,22 @@ function cleanSource(source: string | null, link: string): string {
   if (source && !/^https?:\/\//i.test(source)) return source;
   return (source && hostname(source)) ?? hostname(link) ?? "Unknown source";
 }
-
-export function planFeeds(prefs: Pick<Preferences, "topics" | "keywords" | "sources">): FeedRequest[] {
+export function planFeeds(
+  prefs: Pick<Preferences, "topics" | "keywords" | "sources">,
+  window?: DateWindow,
+): FeedRequest[] {
   const requests: FeedRequest[] = [];
   for (const topic of prefs.topics) {
-    requests.push({ url: googleNewsUrl(topic.name), topic: topic.name });
-    for (const url of CURATED_FEEDS[topic.name] ?? []) requests.push({ url, topic: topic.name });
+    requests.push({ url: googleNewsUrl(topic.name, window), topic: topic.name });
+    if (!window) for (const url of CURATED_FEEDS[topic.name] ?? []) requests.push({ url, topic: topic.name });
   }
   for (const keyword of prefs.keywords) {
-    requests.push({ url: googleNewsUrl(`"${keyword}"`), topic: keyword });
+    requests.push({ url: googleNewsUrl(`"${keyword}"`, window), topic: keyword });
   }
   for (const source of prefs.sources) {
     const host = hostname(source.url);
     if (source.type === "rss") requests.push({ url: source.url, topic: "Your sources" });
-    else if (host) requests.push({ url: googleNewsUrl(`site:${host}`), topic: "Your sources" });
+    else if (host) requests.push({ url: googleNewsUrl(`site:${host}`, window), topic: "Your sources" });
   }
   const seen = new Set<string>();
   return requests.filter((r) => !seen.has(r.url) && seen.add(r.url));
@@ -84,11 +93,14 @@ const normalize = (s: string) =>
 
 export function selectArticles(
   batches: FeedBatch[],
-  { blockedKeywords, now = new Date() }: { blockedKeywords: string[]; now?: Date },
+  {
+    blockedKeywords,
+    now = new Date(),
+    window,
+  }: { blockedKeywords: string[]; now?: Date; window?: DateWindow },
 ): Article[] {
-  const cutoff = now.getTime() - MAX_AGE_HOURS * 3_600_000;
-  const latest = now.getTime() + 3_600_000; // tolerate small clock skew
-  const blocked = blockedKeywords.map((k) => k.toLowerCase());
+  const cutoff = window ? window.from.getTime() : now.getTime() - MAX_AGE_HOURS * 3_600_000;
+  const latest = window ? window.to.getTime() : now.getTime() + 3_600_000; const blocked = blockedKeywords.map((k) => k.toLowerCase());
   const seenUrls = new Set<string>();
   const seenTitles = new Set<string>();
   const perTopic = new Map<string, number>();
@@ -133,9 +145,8 @@ export type IngestResult = {
   feedsTried: number;
   feedsFailed: string[];
 };
-
-export async function ingest(prefs: Preferences): Promise<IngestResult> {
-  const plan = planFeeds(prefs);
+export async function ingest(prefs: Preferences, window?: DateWindow): Promise<IngestResult> {
+  const plan = planFeeds(prefs, window);
   const results = await Promise.allSettled(
     plan.map(async (req) => ({ topic: req.topic, items: await fetchFeed(req.url) })),
   );
@@ -149,7 +160,7 @@ export async function ingest(prefs: Preferences): Promise<IngestResult> {
   if (feedsFailed.length) console.warn(`[ingest] ${feedsFailed.length} feeds failed`, feedsFailed);
 
   return {
-    articles: selectArticles(batches, { blockedKeywords: prefs.blockedKeywords }),
+    articles: selectArticles(batches, { blockedKeywords: prefs.blockedKeywords, window }),
     feedsTried: plan.length,
     feedsFailed,
   };

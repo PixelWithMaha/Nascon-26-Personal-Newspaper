@@ -1,6 +1,6 @@
 import "server-only";
 import { editionSchema, type Edition } from "@/features/edition/schemas";
-import { getSupabaseAdmin, getSupabaseUser } from "@/server/integrations/supabase";
+import { db, getSupabaseAdmin } from "@/server/integrations/supabase";
 
 export async function startEdition(userId: string, editionDate: string): Promise<string> {
   const { data, error } = await getSupabaseAdmin()
@@ -28,7 +28,7 @@ export async function failEdition(editionId: string): Promise<void> {
 }
 
 export async function getLatestEdition(userId: string): Promise<{ id: string; edition: Edition } | null> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("editions")
     .select("id, payload")
@@ -50,7 +50,7 @@ export async function getLatestEdition(userId: string): Promise<{ id: string; ed
 
 /** Stories the reader removed from this edition. */
 export async function getHiddenStoryIds(editionId: string): Promise<string[]> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("feedback")
     .select("story_id")
@@ -65,7 +65,7 @@ export async function getRecentStoryUrls(userId: string, beforeDate: string, day
   const since = new Date(Date.parse(`${beforeDate}T00:00:00Z`) - days * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("editions")
     .select("payload")
@@ -92,7 +92,7 @@ export type EditionRecord = {
 
 /** One ready edition, only if it belongs to the signed-in reader (RLS). */
 export async function getEditionRecord(editionId: string): Promise<EditionRecord | null> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("editions")
     .select("id, user_id, payload, pdf_path")
