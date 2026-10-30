@@ -97,12 +97,15 @@ function LeadStory({ story }: { story: Story }) {
           {story.headline}
         </h2>
         {story.dek && <p className="mt-2 font-display text-lg italic text-ink/80">{story.dek}</p>}
-        <figure className="mt-4">
-          <NewsPhoto src={story.imageUrl} topic={story.topic} className="aspect-[16/10] border border-ink/20" />
-                    <figcaption className="mt-1 font-serif text-[11px] italic text-ink/60">
-            {story.imageCredit ?? `Illustration · ${story.topic}`}
-          </figcaption>
-        </figure>
+        {/* No photo for the lead: print it text-only, like a real paper, instead of a huge placeholder. */}
+        {story.imageUrl && (
+          <figure className="mt-4">
+            <NewsPhoto src={story.imageUrl} topic={story.topic} className="aspect-[16/10] border border-ink/20" />
+            <figcaption className="mt-1 font-serif text-[11px] italic text-ink/60">
+              {story.imageCredit ?? `Photo · ${story.sourceName}`}
+            </figcaption>
+          </figure>
+        )}
         <div className="mt-4 gap-6 font-serif text-[16px] leading-relaxed [column-rule:1px_solid_rgba(23,20,15,0.25)] first-letter:float-left first-letter:mr-2 first-letter:font-display first-letter:text-6xl first-letter:font-black first-letter:leading-[0.8] md:columns-2">
           <p>{story.summary}</p>
         </div>

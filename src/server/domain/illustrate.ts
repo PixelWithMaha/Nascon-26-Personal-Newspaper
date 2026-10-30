@@ -1,6 +1,6 @@
 import "server-only";
 import type { Edition, Story } from "@/features/edition/schemas";
-import { findWikiImage } from "@/server/integrations/wikimedia";
+import { findCommonsImage, findWikiImage } from "@/server/integrations/wikimedia";
 
 const CONCURRENCY = 8;
 
@@ -16,7 +16,8 @@ export async function illustrate(edition: Edition, queries: Map<string, string>)
   async function worker() {
     while (next < uniqueQueries.length) {
       const q = uniqueQueries[next++];
-      found.set(q, await findWikiImage(q).catch(() => null));
+      const wiki = await findWikiImage(q).catch(() => null);
+      found.set(q, wiki ?? (await findCommonsImage(q).catch(() => null)));
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
