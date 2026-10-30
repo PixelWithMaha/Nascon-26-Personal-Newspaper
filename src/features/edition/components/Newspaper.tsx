@@ -271,6 +271,8 @@ export function Newspaper({ editionId, edition, hiddenStoryIds }: NewspaperProps
   };
 
   const rail = take((s) => s.size !== "brief", 3);
+  // Two stories under the lead keep the centre column as tall as the rail beside it.
+  const underLead = take((s) => s.size !== "brief", 2);
   const latest = take((s) => s.size === "brief", 6);
   if (latest.length < 4) latest.push(...take(() => true, 4 - latest.length));
   const belowFold = take((s) => s.size !== "brief", 4);
@@ -299,6 +301,13 @@ export function Newspaper({ editionId, edition, hiddenStoryIds }: NewspaperProps
             )}
             <div className={rail.length > 0 ? "lg:col-span-6" : "lg:col-span-9"}>
               <LeadStory story={lead} />
+              {underLead.length > 0 && (
+                <div className="mt-6 grid divide-y divide-ink/30 border-t-2 border-ink md:grid-cols-2 md:divide-x md:divide-y-0">
+                  {underLead.map((s) => (
+                    <CardStory key={s.id} story={s} />
+                  ))}
+                </div>
+              )}
             </div>
             <LatestNews stories={latest} note={edition.editorNote} />
           </div>
