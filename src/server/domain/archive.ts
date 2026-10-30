@@ -2,6 +2,7 @@ import "server-only";
 import { editionSchema, type Edition } from "@/features/edition/schemas";
 import type { EditionSummary } from "@/features/archive/schemas";
 import { getSupabaseUser } from "@/server/integrations/supabase";
+import { db } from "@/server/integrations/supabase";
 
 export function toSummary(id: string, editionDate: string, edition: Edition, hasPdf: boolean): EditionSummary {
   const stories = edition.sections.flatMap((s) => s.stories);
@@ -27,7 +28,7 @@ export function toSummary(id: string, editionDate: string, edition: Edition, has
 }
 
 export async function listEditionSummaries(userId: string): Promise<EditionSummary[]> {
-  const supabase = await getSupabaseUser();
+  const supabase = await db();
   const { data, error } = await supabase
     .from("editions")
     .select("id, edition_date, payload, pdf_path")

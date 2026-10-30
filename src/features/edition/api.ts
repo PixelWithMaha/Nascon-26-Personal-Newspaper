@@ -10,7 +10,7 @@ export function generateEdition() {
   return apiRequest("/api/generate", {
     method: "POST",
     schema: editionResponseSchema,
-    timeoutMs: 90_000,
+    timeoutMs: 300_000,
   });
 }
 
